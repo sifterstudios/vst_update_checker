@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/xml"
+	"fmt"
+	"io"
 	"log"
 	"os"
 )
@@ -42,7 +44,10 @@ type Plugin struct {
 }
 
 func main() {
-	xmlFile, err := os.Open("C:/Users/thesifter/AppData/Roaming/Steinberg/Cubase 12_64/Cubase Pro VST3 Cache/vst3plugins.xml")
+
+	var UserConfigDir, _ = os.UserConfigDir()
+
+	xmlFile, err := os.Open(UserConfigDir + "/Steinberg/Cubase 12_64/Cubase Pro VST3 Cache/vst3plugins.xml")
 
 	if err != nil {
 		log.Fatal(err) //
@@ -50,4 +55,20 @@ func main() {
 
 	println("Successfully Opened 'vst3plugins.xml'")
 	defer xmlFile.Close()
+
+	byteValue, _ := io.ReadAll(xmlFile)
+
+	var plugins Plugins
+	err = xml.Unmarshal(byteValue, &plugins)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for i := 0; i < len(plugins.Plugins); i++ {
+		fmt.Println("Plugin Vendor: " + plugins.Plugins[i].Class.Vendor)
+		fmt.Println("Plugin Name: " + plugins.Plugins[i].Class.Name)
+		fmt.Println("Plugin Url: " + plugins.Plugins[i].Url)
+		fmt.Println("Plugin Version: " + plugins.Plugins[i].Class.Version)
+	}
+
 }

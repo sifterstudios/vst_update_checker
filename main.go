@@ -54,7 +54,12 @@ func main() {
 	}
 
 	println("Successfully Opened 'vst3plugins.xml'")
-	defer xmlFile.Close()
+	defer func(xmlFile *os.File) {
+		err := xmlFile.Close()
+		if err != nil {
+
+		}
+	}(xmlFile)
 
 	byteValue, _ := io.ReadAll(xmlFile)
 

@@ -2,58 +2,19 @@ package main
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+	"vst_update_checker/constants"
+	"vst_update_checker/xml_parse"
 )
 
-type Plugins struct {
-	XMLName xml.Name `xml:"plugins"`
-	Plugins []Plugin `xml:"plugin"`
-}
-
-type Timestamps struct {
-	XMLName    xml.Name `xml:"timestamps"`
-	Executable string   `xml:"executable"`
-}
-
-type Class struct {
-	XMLName       xml.Name `xml:"class"`
-	Cid           string   `xml:"cid"`
-	Cardinality   int      `xml:"cardinality"`
-	Category      string   `xml:"category"`
-	Name          string   `xml:"name"`
-	ClassFlags    int      `xml:"classFlags"`
-	SubCategories string   `xml:"subCategories"`
-	Vendor        string   `xml:"vendor"`
-	Version       string   `xml:"version"`
-	SdkVersion    string   `xml:"sdkVersion"`
-}
-
-type Plugin struct {
-	XMLName    xml.Name   `xml:"plugin"`
-	Path       string     `xml:"path"`
-	Vendor     string     `xml:"vendor"`
-	Url        string     `xml:"url"`
-	Email      string     `xml:"email"`
-	Flags      int        `xml:"flags"`
-	Codesigned bool       `xml:"codesigned"`
-	Timestamps Timestamps `xml:"timestamps"`
-	Class      Class      `xml:"class"`
-}
-
 func main() {
+	var xmlFile, err = getInstallationLocation(constants.InstallationLocations)
 
-	var UserConfigDir, _ = os.UserConfigDir()
-
-	xmlFile, err := os.Open(UserConfigDir + "/Steinberg/Cubase 12_64/Cubase Pro VST3 Cache/vst3plugins.xml")
-
-	if err != nil {
-		log.Fatal(err) //
-	}
-
-	println("Successfully Opened 'vst3plugins.xml'")
 	defer func(xmlFile *os.File) {
 		err := xmlFile.Close()
 		if err != nil {
@@ -63,7 +24,7 @@ func main() {
 
 	byteValue, _ := io.ReadAll(xmlFile)
 
-	var plugins Plugins
+	var plugins xml_parse.Plugins
 	err = xml.Unmarshal(byteValue, &plugins)
 	if err != nil {
 		log.Fatal(err)
@@ -76,4 +37,19 @@ func main() {
 		fmt.Println("Plugin Version: " + plugins.Plugins[i].Class.Version)
 	}
 
+}
+
+func getInstallationLocation(installationLocations []string) (*os.File, error) {
+	var UserConfigDir, _ = os.UserConfigDir()
+	for _, v := range installationLocations {
+		xmlFile, err := os.Open(filepath.Join(UserConfigDir, v))
+		if err != nil {
+			//println("XML File not found at " + v + ", continuing...")
+			continue
+		}
+
+		return xmlFile, nil
+	}
+
+	return nil, errors.New("no installation locations found")
 }
